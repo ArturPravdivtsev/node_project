@@ -14,6 +14,7 @@ const getTime = ({ now, event }) => {
     let duration = moment.duration(leftTime, 'seconds');
 
     console.log('Осталось секунд', duration.seconds(), 'минут', duration.minutes(), 'часов', duration.hours(), 'дней', duration.days(), 'месяцев', duration.months(), 'лет', duration.years());
+    console.clear();
 }
 
 const runTimer = async (eventDate) => {
