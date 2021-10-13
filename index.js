@@ -1,59 +1,35 @@
-const colors = require('colors');
+const EventEmitter = require('events');
+const moment = require('moment');
 
-function isAN(value) {
-    if (value instanceof Number)
-        value = value.valueOf();
+const emitter = new EventEmitter();
 
-    return isFinite(value) && value === parseInt(value, 10);
-}
+const getTime = ({ now, event }) => {
+    let leftTime = event - now;
 
-function chunkArray(array, size) {
-    let subarray = [];
-    for (let i = 0; i < array.length; i += size) {
-        subarray.push(array.slice(i, i + size));
-    }
-    return subarray;
-}
-
-function isPrime(num) {
-    for (let i = 2, max = Math.sqrt(num); i <= max; i++) {
-        if (num % i === 0) {
-            return false;
-        }
-    }
-    return num > 1;
-}
-
-function getPrimes(min, max) {
-    const primes = [];
-
-    for (let i = min; i <= max; i++) {
-        if (isPrime(i)) {
-            primes.push(i);
-        }
+    if (leftTime < 0) {
+        emitter.removeAllListeners();
+        return console.log('Таймер закончил отсчет!');
     }
 
-    if (primes.length < 1) console.log(colors.red('Простых чисел в заданном диапазоне не обнаружено!'));
+    let duration = moment.duration(leftTime, 'seconds');
 
-    return primes;
+    console.log('Осталось секунд', duration.seconds(), 'минут', duration.minutes(), 'часов', duration.hours(), 'дней', duration.days(), 'месяцев', duration.months(), 'лет', duration.years());
+    console.clear();
 }
 
-function setColors(numbers) {
-    numbers.map((number) => {
-        number.map((num, idx) => {
-            if ((idx + 1) % 2 === 0) {
-                console.log(colors.yellow(num));
-            } else if ((idx + 1) % 3 === 0) {
-                console.log(colors.red(num));
-            } else {
-                console.log(colors.green(num));
-            }
-        })
-    })
+const runTimer = async (eventDate) => {
+    emitter.emit('timer', { now: moment().unix(), event: moment(eventDate, "m-h-DD-MM-YYYY").unix() });
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await runTimer(eventDate);
 }
 
-if (!Number.isInteger(+process.argv[2]) || !Number.isInteger(+process.argv[3])) {
-    return console.log(colors.red('Аргументы должны быть числами!'));
+emitter.on('timer', getTime);
+
+const eventDate = process.argv[2];
+
+if (moment(eventDate, "m-h-DD-MM-YYYY").unix() - moment().unix() > 0) {
+    runTimer(eventDate);
+} else {
+    console.log('Дата меньше текущей!');
 }
-const primesArr = getPrimes(process.argv[2], process.argv[3]);
-setColors(chunkArray(primesArr, 3));
