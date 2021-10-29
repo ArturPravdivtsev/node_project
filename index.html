@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Socket</title>
+    <script src="https://cdn.socket.io/4.2.0/socket.io.min.js" integrity="sha384-PiBR5S00EtOj2Lto9Uu81cmoyZqR57XcOna1oAuVuIEjzj0wpqDVfD0JA9eXlRsj" crossorigin="anonymous"></script>
+</head>
+<body>
+<p>Количество подключенных пользователей: <span id="count"></span></p>
+<input id="input" type="text" autofocus>
+<button id="button">Send</button>
+<div id="messages"></div>
+<script>
+    const socket = io('localhost:5555');
+    const messageBlock = document.getElementById('messages');
+    const sendButton = document.getElementById('button');
+    const input = document.getElementById('input');
+    const count = document.getElementById('count');
+
+    socket.on('connect', () => {
+        console.log('connected');
+    });
+
+    socket.on("count", (counter) => {
+        count.innerText = counter;
+    });
+
+    // socket.emit('client-msg', 'test');
+
+    sendButton.onclick = () => {
+        const data = {
+            message: input.value,
+        };
+
+        socket.emit('client-msg', data);
+    }
+
+    socket.on('server-msg', ({ username, message }) => {
+        messageBlock.insertAdjacentHTML('beforeend', `<p><span>${username}</span>: ${message}</p>`)
+    })
+
+    socket.on('connected', () => {
+        messageBlock.insertAdjacentHTML('beforeend', `<p>Client connected</p>`)
+    })
+
+    socket.on('disconnected', () => {
+        messageBlock.insertAdjacentHTML('beforeend', `<p>Client disconnected</p>`)
+    })
+
+    socket.on("user connected", () => {
+        messageBlock.insertAdjacentHTML('beforeend', `<p>Client connected</p>`)
+    });
+</script>
+</body>
+</html>

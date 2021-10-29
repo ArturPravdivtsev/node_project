@@ -1,24 +1,57 @@
+const socket = require('socket.io');
+const http = require('http');
 const fs = require('fs');
-const ACCESS_LOG = './access.log';
+const path = require('path');
 
-const readStream = fs.createReadStream(ACCESS_LOG, 'utf-8');
+const server = http.createServer((req, res) => {
+    const indexPath = path.join(__dirname, 'index.html');
+    const readStream = fs.createReadStream(indexPath);
+    res.writeHead(200, {
+        'Content-Type': 'text/html'
+    });
+    readStream.pipe(res);
+    // const indexHTML = fs.readFileSync(indexPath);
+    // res.end(indexHTML);
+});
+const io = socket(server);
 
-readStream.on('data', (chunk) => {
-    const lines = chunk.split('\n');
-    lines.forEach(line => {
-        const ip = line.split(' ')[0];
-        if (ip === '89.123.1.41' || ip === '34.48.240.111') {
-            fs.appendFile(`./${ip}_requests.log`,
-                `${line}\n`,
-                {
-                    encoding: 'utf-8',
-                },
-                (err) => {
-                    if (err) console.log(err);
-                }
-            );
+io.on('connection', client => {
+    console.log('Connected');
+
+    const users = [];
+    for (let [id, client] of io.of("/").sockets) {
+
+        users.push({
+            userID: id,
+            username: id,
+        });
+    }
+
+    client.emit("count", users.length);
+
+    client.broadcast.emit("user connected", {
+        userID: client.id,
+        username: client.id,
+    });
+
+    client.on('client-msg', ({ message }) => {
+        // console.log(data);
+        const data = {
+            message: message.split('').reverse().join(''),
+            username: client.id
         }
+        client.broadcast.emit('server-msg', data);
+        client.emit('server-msg', data);
+    });
+
+    client.broadcast.emit('connected');
+    client.emit('connected');
+
+    client.on('disconnect', () => {
+        console.log('user disconnected');
+        client.broadcast.emit('disconnected');
+        client.emit('disconnected');
     });
 });
 
-readStream.on('end', () => console.log('Finished!'));
+server.listen(5555);
